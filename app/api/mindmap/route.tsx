@@ -4,13 +4,14 @@ import { NextRequest } from 'next/server';
 class TreeNode {
     text: string;
     path: string;
-    parent: string | null;
+    parent: TreeNode | null;
     x: number; // ノードのX座標
     y: number; // ノードのY座標
     width: number; // ノードの幅
     height: number; // ノードの高さ
+    bottom: number; // ノードの底のY座標
 
-    constructor(text: string, path: string, parent: string | null) {
+    constructor(text: string, path: string, parent: TreeNode | null) {
         this.text = text;
         this.path = path;
         this.parent = parent;
@@ -18,6 +19,7 @@ class TreeNode {
         this.y = 0;
         this.width = 0;
         this.height = 0;
+        this.bottom = 0;
     }
 
     // ノードの位置とサイズを設定するメソッド
@@ -27,6 +29,22 @@ class TreeNode {
         this.height = fontSize + padding * 2;
         this.x = x;
         this.y = y;
+        this.bottom = y + this.height;
+
+        // 親ノードのbottomを更新
+        if (this.parent) {
+            this.parent.setBottom(this.bottom);
+        }
+    }
+
+    // 親ノードのbottomを更新するメソッド
+    setBottom(childBottom: number) {
+        if (childBottom > this.bottom) {
+            this.bottom = childBottom;
+            if (this.parent) {
+                this.parent.setBottom(this.bottom);
+            }
+        }
     }
 
     // SVGを生成するメソッド
@@ -48,11 +66,17 @@ function createSvgWithConnectedRects(nodes: Map<string, TreeNode>): string {
     let svgLines = '';
 
     nodes.forEach((node, path) => {
-        const parentNode = node.parent ? nodes.get(node.parent) : null;
+        const parentNode = node.parent;
         const currentX = parentNode ? parentNode.x + parentNode.width + gapX : 0;
         const pathArr = path.split('-');
         const siblingIndex = Number(pathArr[pathArr.length - 1]);
-        const currentY = parentNode ? parentNode.y + (parentNode.height + gapY) * siblingIndex : 0;
+        let currentY = 0;
+        if (siblingIndex === 0) {
+            currentY = parentNode ? parentNode.y : 0;
+        } else {
+            const siblingPath = pathArr.slice(0, -1).join('-') + '-' + (siblingIndex - 1);
+            currentY = nodes.get(siblingPath)?.bottom + gapY ?? 0;
+        }
         console.log(path + " " + node.text + " (" + currentX + ", " + currentY + "), siblingIndex=" + siblingIndex);
         node.setPositionAndSize(currentX, currentY, fontSize, padding);
         svgRects += node.generateSvg();
@@ -104,7 +128,7 @@ function parseCodeToTreeNodes(code: string): Map<string, TreeNode> {
         const parentPath = pathStack.length > 1 ? pathStack.slice(0, -1).join('-') : null;
 
         // TreeNodeを作成してMapに追加
-        nodes.set(path, new TreeNode(text, path, parentPath));
+        nodes.set(path, new TreeNode(text, path, nodes.get(parentPath)));
         console.log(path + " " + text + " (" + parentPath + ")");
     });
 
