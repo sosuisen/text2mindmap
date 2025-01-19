@@ -5,21 +5,35 @@ class TreeNode {
     text: string;
     path: string;
     parent: string | null;
+    x: number; // ノードのX座標
+    y: number; // ノードのY座標
+    width: number; // ノードの幅
+    height: number; // ノードの高さ
 
     constructor(text: string, path: string, parent: string | null) {
         this.text = text;
         this.path = path;
         this.parent = parent;
+        this.x = 0;
+        this.y = 0;
+        this.width = 0;
+        this.height = 0;
+    }
+
+    // ノードの位置とサイズを設定するメソッド
+    setPositionAndSize(x: number, y: number, fontSize: number, padding: number) {
+        const textLength = this.text.length;
+        this.width = textLength * fontSize + padding * 2;
+        this.height = fontSize + padding * 2;
+        this.x = x;
+        this.y = y;
     }
 
     // SVGを生成するメソッド
-    generateSvg(x: number, y: number, fontSize: number, padding: number): string {
-        const textLength = this.text.length;
-        const width = textLength * fontSize + padding * 2;
-        const height = fontSize + padding * 2;
+    generateSvg(): string {
         return `
-  <rect x="${x}" y="${y}" width="${width}" height="${height}" fill="lightblue" stroke="black" stroke-width="2"/>
-  <text x="${x + width / 2}" y="${y + height / 2 + fontSize / 4}" font-size="${fontSize}" text-anchor="middle" fill="black">${this.text}</text>
+  <rect x="${this.x}" y="${this.y}" width="${this.width}" height="${this.height}" fill="lightblue" stroke="black" stroke-width="2"/>
+  <text x="${this.x + this.width / 2}" y="${this.y + this.height / 2 + 5}" font-size="20" text-anchor="middle" fill="black">${this.text}</text>
 `;
     }
 }
@@ -28,28 +42,33 @@ class TreeNode {
 function createSvgWithConnectedRects(nodes: Map<string, TreeNode>): string {
     const padding = 20;
     const fontSize = 20;
-    const gap = 50; // 矩形間の距離
-    let currentX = 0;
-    const height = fontSize + padding * 2;
+    const gapX = 50; // 矩形間の水平距離
+    const gapY = 30; // 矩形間の垂直距離
     let svgRects = '';
     let svgLines = '';
 
-    Array.from(nodes.values()).forEach((node, index) => {
-        svgRects += node.generateSvg(currentX, 0, fontSize, padding);
-        const textLength = node.text.length;
-        const width = textLength * fontSize + padding * 2;
-        if (index > 0) {
+    nodes.forEach((node, path) => {
+        const parentNode = node.parent ? nodes.get(node.parent) : null;
+        const currentX = parentNode ? parentNode.x + parentNode.width + gapX : 0;
+        const pathArr = path.split('-');
+        const siblingIndex = Number(pathArr[pathArr.length - 1]);
+        const currentY = parentNode ? parentNode.y + (parentNode.height + gapY) * siblingIndex : 0;
+        console.log(path + " " + node.text + " (" + currentX + ", " + currentY + "), siblingIndex=" + siblingIndex);
+        node.setPositionAndSize(currentX, currentY, fontSize, padding);
+        svgRects += node.generateSvg();
+
+        if (parentNode) {
             svgLines += `
-  <line x1="${currentX - gap}" y1="${height / 2}" x2="${currentX}" y2="${height / 2}" stroke="black" stroke-width="2"/>
+  <line x1="${parentNode.x + parentNode.width}" y1="${parentNode.y + parentNode.height / 2}" x2="${node.x}" y2="${node.y + node.height / 2}" stroke="black" stroke-width="2"/>
 `;
         }
-        currentX += width + gap;
     });
 
-    const totalWidth = currentX - gap;
+    const totalWidth = Math.max(...Array.from(nodes.values()).map(node => node.x + node.width)) + 200;
+    const totalHeight = Math.max(...Array.from(nodes.values()).map(node => node.y + node.height)) + 50;
 
     return `
-<svg width="${totalWidth}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+<svg width="${totalWidth}" height="${totalHeight}" xmlns="http://www.w3.org/2000/svg">
 ${svgRects}
 ${svgLines}
 </svg>
@@ -61,7 +80,6 @@ function parseCodeToTreeNodes(code: string): Map<string, TreeNode> {
     const nodes = new Map<string, TreeNode>();
     const lines = code.trim().split('\n');
     const pathStack: number[] = [];
-    let lastPath: string | null = null;
 
     lines.forEach((line, index) => {
         const depth = line.search(/\S/); // 行頭の空白文字の数をカウント
@@ -85,9 +103,9 @@ function parseCodeToTreeNodes(code: string): Map<string, TreeNode> {
         const path = pathStack.join('-');
         const parentPath = pathStack.length > 1 ? pathStack.slice(0, -1).join('-') : null;
 
-        console.log(path + " " + text + " (" + parentPath + ")");
         // TreeNodeを作成してMapに追加
         nodes.set(path, new TreeNode(text, path, parentPath));
+        console.log(path + " " + text + " (" + parentPath + ")");
     });
 
     return nodes;
