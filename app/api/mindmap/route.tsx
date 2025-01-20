@@ -40,11 +40,15 @@ function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, g
 }
 
 // SVGを生成する関数
-function createSvgWithConnectedRects(nodes: Map<string, TreeNode>): string {
+function createSvgWithConnectedRects(nodes: Map<string, TreeNode>, fontSize: number, padding: number) {
     let svgRects = '';
     let svgLines = '';
 
     nodes.forEach((node) => {
+        // 位置とサイズを設定
+        node.setPositionAndSize(node.x, node.y, fontSize, padding);
+
+        // SVGを生成
         svgRects += node.generateSvg();
 
         if (node.parent) {
@@ -138,7 +142,7 @@ export async function GET(request: NextRequest) {
     calculatePositionForNodes(nodes, gapX, gapY);
 
     // TreeNodeに基づいてSVGを生成
-    const svg = createSvgWithConnectedRects(nodes);
+    const svg = createSvgWithConnectedRects(nodes, fontSize, padding);
 
     try {
         if (type === 'image') {
