@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { TreeNode } from '../../../lib/TreeNode';
 
 // 文字数に基づいて矩形サイズを計算する関数
@@ -20,7 +20,11 @@ function createSvgWithConnectedRects(nodes: Map<string, TreeNode>): string {
             currentY = parentNode ? parentNode.y : 0;
         } else {
             const siblingPath = pathArr.slice(0, -1).join('-') + '-' + (siblingIndex - 1);
-            currentY = nodes.get(siblingPath)?.bottom + gapY ?? 0;
+            if (nodes.get(siblingPath)) {
+                currentY = nodes.get(siblingPath).bottom + gapY;
+            } else {
+                currentY = 0;
+            }
         }
         console.log(path + " " + node.text + " (" + currentX + ", " + currentY + "), siblingIndex=" + siblingIndex);
         node.setPositionAndSize(currentX, currentY, fontSize, padding);
@@ -37,7 +41,7 @@ function createSvgWithConnectedRects(nodes: Map<string, TreeNode>): string {
     const totalHeight = Math.max(...Array.from(nodes.values()).map(node => node.y + node.height)) + 50;
 
     return `
-<svg width="${totalWidth}" height="${totalHeight}" xmlns="http://www.w3.org/2000/svg">
+<svg id="mindmap-svg" width="${totalWidth}" height="${totalHeight}" xmlns="http://www.w3.org/2000/svg">
 ${svgRects}
 ${svgLines}
 </svg>
@@ -50,7 +54,7 @@ function parseCodeToTreeNodes(code: string): Map<string, TreeNode> {
     const lines = code.trim().split('\n');
     const pathStack: number[] = [];
 
-    lines.forEach((line, index) => {
+    lines.forEach((line) => {
         const depth = line.search(/\S/); // 行頭の空白文字の数をカウント
         const text = line.trim();
 
@@ -81,7 +85,9 @@ function parseCodeToTreeNodes(code: string): Map<string, TreeNode> {
 }
 
 // GETメソッド用の関数
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
+    const type = request.nextUrl.searchParams.get('type');
+
     const code = `
  top
   基本概念の理解
@@ -108,13 +114,23 @@ export async function GET(req: NextRequest) {
     const svg = createSvgWithConnectedRects(nodes);
 
     try {
-        return new Response(svg, {
-            headers: { 'Content-Type': 'image/svg+xml' },
-            status: 200
-        });
+        if (type === 'image') {
+            return new NextResponse(svg, {
+                headers: { 'Content-Type': 'image/svg+xml' },
+                status: 200
+            });
+        } else {
+            const json = {
+                svg,
+            };
+            return new NextResponse(JSON.stringify(json), {
+                headers: { 'Content-Type': 'application/json' },
+                status: 200
+            });
+        }
     } catch (error) {
         console.error('Error generating SVG:', error);
-        return new Response(JSON.stringify({ error: 'Failed to generate SVG' }), {
+        return new NextResponse(JSON.stringify({ error: 'Failed to generate SVG' }), {
             headers: { 'Content-Type': 'application/json' },
             status: 500
         });
