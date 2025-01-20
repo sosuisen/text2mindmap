@@ -12,14 +12,18 @@ function calculateSizeForNodes(nodes: Map<string, TreeNode>, fontSize: number, p
 
 // ノードの位置を計算する関数
 function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, gapY: number) {
-    nodes.forEach((node, path) => {
+    console.log("# calculatePositionForNodes");
+    const sortedNodes = Array.from(nodes.values()).sort((a, b) => a.path.localeCompare(b.path));
+    sortedNodes.forEach((node) => {
+        console.log(node.path + " " + node.text + " " + node.childWidth + " " + node.childHeight);
         const parentNode = node.parent;
         const currentX = parentNode ? parentNode.x + parentNode.width + gapX : 0;
-        const pathArr = path.split('-');
+        const pathArr = node.path.split('-');
         const siblingIndex = Number(pathArr[pathArr.length - 1]);
         let currentY = 0;
+
         if (siblingIndex === 0) {
-            currentY = parentNode ? parentNode.y : 0;
+            currentY = parentNode ? parentNode.y - parentNode.childHeight / 2 : 0;
         } else {
             const siblingPath = pathArr.slice(0, -1).join('-') + '-' + (siblingIndex - 1);
             if (nodes.get(siblingPath)) {
@@ -31,15 +35,9 @@ function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, g
 
         node.x = currentX;
 
-        if (!parentNode) {
-            // ルートノードの場合
-            node.y = currentY + node.childHeight / 2;
-        } else {
-            // ルートノード以外の場合
-            node.y = currentY - node.childHeight / 2;
-        }
-
-        node.bottom = node.y + node.height;
+        const height = node.height > node.childHeight ? node.height : node.childHeight;
+        node.y = currentY + height / 2;
+        node.bottom = node.y + height / 2;
 
         // 親ノードのbottomを更新
         if (parentNode) {
