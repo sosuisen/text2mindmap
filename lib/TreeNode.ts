@@ -8,6 +8,7 @@ export class TreeNode {
     width: number; // ノードの幅
     height: number; // ノードの高さ
     bottom: number; // ノードの底のY座標
+    fontSize: number; // ノードのフォントサイズ
 
     constructor(text: string, path: string, parent: TreeNode | null) {
         this.text = text;
@@ -18,6 +19,7 @@ export class TreeNode {
         this.width = 0;
         this.height = 0;
         this.bottom = 0;
+        this.fontSize = 0;
     }
 
     // ノードの位置とサイズを設定するメソッド
@@ -28,6 +30,7 @@ export class TreeNode {
         this.x = x;
         this.y = y;
         this.bottom = y + this.height;
+        this.fontSize = fontSize;
 
         // 親ノードのbottomを更新
         if (this.parent) {
@@ -48,8 +51,8 @@ export class TreeNode {
     // SVGを生成するメソッド
     generateSvg(): string {
         return `
-  <rect x="${this.x}" y="${this.y}" width="${this.width}" height="${this.height}" fill="lightblue" stroke="black" stroke-width="2"/>
-  <text x="${this.x + this.width / 2}" y="${this.y + this.height / 2 + 5}" font-size="20" text-anchor="middle" fill="black">${this.text}</text>
+<rect x="${this.x}" y="${this.y}" width="${this.width}" height="${this.height}" rx="10" ry="10" fill="lightblue" stroke="black" stroke-width="2"/>
+<text x="${this.x + this.width / 2}" y="${this.y + this.height / 2}" font-size="${this.fontSize}" text-anchor="middle" alignment-baseline="central" fill="black">${this.text}</text>
 `;
     }
 }

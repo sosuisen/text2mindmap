@@ -3,10 +3,10 @@ import { TreeNode } from '../../../lib/TreeNode';
 
 // 文字数に基づいて矩形サイズを計算する関数
 function createSvgWithConnectedRects(nodes: Map<string, TreeNode>): string {
-    const padding = 20;
-    const fontSize = 20;
-    const gapX = 50; // 矩形間の水平距離
-    const gapY = 30; // 矩形間の垂直距離
+    const padding = 10;
+    const fontSize = 10;
+    const gapX = 25;
+    const gapY = 15;
     let svgRects = '';
     let svgLines = '';
 
@@ -37,8 +37,8 @@ function createSvgWithConnectedRects(nodes: Map<string, TreeNode>): string {
         }
     });
 
-    const totalWidth = Math.max(...Array.from(nodes.values()).map(node => node.x + node.width)) + 200;
-    const totalHeight = Math.max(...Array.from(nodes.values()).map(node => node.y + node.height)) + 50;
+    const totalWidth = Math.max(...Array.from(nodes.values()).map(node => node.x + node.width)) + 100;
+    const totalHeight = Math.max(...Array.from(nodes.values()).map(node => node.y + node.height)) + 25;
 
     return `
 <svg id="mindmap-svg" width="${totalWidth}" height="${totalHeight}" xmlns="http://www.w3.org/2000/svg">
