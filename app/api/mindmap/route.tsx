@@ -2,14 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { TreeNode } from '../../../lib/TreeNode';
 
 // 文字数に基づいて矩形サイズを計算する関数
-function createSvgWithConnectedRects(nodes: Map<string, TreeNode>): string {
-    const padding = 10;
-    const fontSize = 10;
-    const gapX = 25;
-    const gapY = 15;
-    let svgRects = '';
-    let svgLines = '';
+function calculateSizeForNodes(nodes: Map<string, TreeNode>, fontSize: number, padding: number) {
+    nodes.forEach((node) => {
+        const textLength = node.text.length;
+        node.width = textLength * fontSize + padding * 2;
+        node.height = fontSize + padding * 2;
+    });
+}
 
+// ノードの位置を計算する関数
+function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, gapY: number) {
     nodes.forEach((node, path) => {
         const parentNode = node.parent;
         const currentX = parentNode ? parentNode.x + parentNode.width + gapX : 0;
@@ -26,13 +28,28 @@ function createSvgWithConnectedRects(nodes: Map<string, TreeNode>): string {
                 currentY = 0;
             }
         }
-        console.log(path + " " + node.text + " (" + currentX + ", " + currentY + "), siblingIndex=" + siblingIndex);
-        node.setPositionAndSize(currentX, currentY, fontSize, padding);
+        node.x = currentX;
+        node.y = currentY;
+        node.bottom = currentY + node.height;
+
+        // 親ノードのbottomを更新
+        if (parentNode) {
+            parentNode.setBottom(node.bottom);
+        }
+    });
+}
+
+// SVGを生成する関数
+function createSvgWithConnectedRects(nodes: Map<string, TreeNode>): string {
+    let svgRects = '';
+    let svgLines = '';
+
+    nodes.forEach((node) => {
         svgRects += node.generateSvg();
 
-        if (parentNode) {
+        if (node.parent) {
             svgLines += `
-  <line x1="${parentNode.x + parentNode.width}" y1="${parentNode.y + parentNode.height / 2}" x2="${node.x}" y2="${node.y + node.height / 2}" stroke="black" stroke-width="2"/>
+  <line x1="${node.parent.x + node.parent.width}" y1="${node.parent.y + node.parent.height / 2}" x2="${node.x}" y2="${node.y + node.height / 2}" stroke="black" stroke-width="2"/>
 `;
         }
     });
@@ -109,6 +126,16 @@ export async function GET(request: NextRequest) {
 
     // コードをパースしてTreeNodeのMapを作成
     const nodes = parseCodeToTreeNodes(code);
+
+    // 各ノードの幅と高さを計算
+    const fontSize = 10;
+    const padding = 10;
+    calculateSizeForNodes(nodes, fontSize, padding);
+
+    // 各ノードの位置を計算
+    const gapX = 25;
+    const gapY = 15;
+    calculatePositionForNodes(nodes, gapX, gapY);
 
     // TreeNodeに基づいてSVGを生成
     const svg = createSvgWithConnectedRects(nodes);
