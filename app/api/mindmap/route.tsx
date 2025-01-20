@@ -28,9 +28,18 @@ function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, g
                 currentY = 0;
             }
         }
+
         node.x = currentX;
-        node.y = currentY;
-        node.bottom = currentY + node.height;
+
+        if (!parentNode) {
+            // ルートノードの場合
+            node.y = currentY + node.childHeight / 2;
+        } else {
+            // ルートノード以外の場合
+            node.y = currentY - node.childHeight / 2;
+        }
+
+        node.bottom = node.y + node.height;
 
         // 親ノードのbottomを更新
         if (parentNode) {
@@ -105,6 +114,27 @@ function parseCodeToTreeNodes(code: string): Map<string, TreeNode> {
     return nodes;
 }
 
+// 子ノードの合計幅と高さを計算し、コンソールに表示する関数
+function calculateAndLogChildDimensions(nodes: Map<string, TreeNode>) {
+    // ノードをpathの長さでソートして、深い階層から処理する
+    const sortedNodes = Array.from(nodes.values()).sort((a, b) => b.path.length - a.path.length);
+
+    sortedNodes.forEach((node) => {
+        console.log(node.path + " " + node.text + " " + node.width + " " + node.height);
+        if (node.parent) {
+            const widht = node.width > node.childWidth ? node.width : node.childWidth;
+            const height = node.height > node.childHeight ? node.height : node.childHeight;
+            node.parent.childWidth += widht;
+            node.parent.childHeight += height;
+        }
+    });
+
+    // コンソールにchildHeightを一覧表示
+    nodes.forEach((node, path) => {
+        console.log(`Node path: ${path}, childHeight: ${node.childHeight}`);
+    });
+}
+
 // GETメソッド用の関数
 export async function GET(request: NextRequest) {
     const type = request.nextUrl.searchParams.get('type');
@@ -135,6 +165,9 @@ export async function GET(request: NextRequest) {
     const fontSize = 10;
     const padding = 10;
     calculateSizeForNodes(nodes, fontSize, padding);
+
+    // 子ノードの合計幅と高さを計算し、コンソールに表示
+    calculateAndLogChildDimensions(nodes);
 
     // 各ノードの位置を計算
     const gapX = 25;

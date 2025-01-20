@@ -9,6 +9,8 @@ export class TreeNode {
     height: number; // ノードの高さ
     bottom: number; // ノードの底のY座標
     fontSize: number; // ノードのフォントサイズ
+    childWidth: number; // 子ノードの合計幅
+    childHeight: number; // 子ノードの合計高さ
 
     constructor(text: string, path: string, parent: TreeNode | null) {
         this.text = text;
@@ -20,6 +22,8 @@ export class TreeNode {
         this.height = 0;
         this.bottom = 0;
         this.fontSize = 0;
+        this.childWidth = 0;
+        this.childHeight = 0;
     }
 
     // ノードの位置とサイズを設定するメソッド
