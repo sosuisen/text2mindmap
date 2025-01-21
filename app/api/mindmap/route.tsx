@@ -95,7 +95,6 @@ function classifyDepthTwoNodes(nodes: Map<string, TreeNode>): { rightNodes: Map<
     });
 
     tmpLeftNodes.forEach((node) => {
-        const pathParts = node.path.split('-');
         const newPath = node.path.replace(/^(\d+)-(\d+)/, (match, p1, p2) => `${p1}-${Number(p2) - rightIndex}`);
         node.path = newPath;
         leftNodes.set(newPath, node);
@@ -113,14 +112,12 @@ function calculateChildDimensions(nodes: Map<string, TreeNode>, gapX: number, ga
         console.log(node.path + " " + node.text + " " + node.width + " " + node.height);
         if (node.parent) {
             if (node.direction === "left") {
-                const width = node.width > node.leftChildWidth ? node.width : node.leftChildWidth;
                 const height = node.height > node.leftChildHeight ? node.height : node.leftChildHeight;
-                node.parent.leftChildWidth += width + gapX;
+                node.parent.leftChildWidth = Math.max(node.parent.leftChildWidth, node.width + node.leftChildWidth + gapX);
                 node.parent.leftChildHeight += height + gapY;
             } else {
-                const width = node.width > node.rightChildWidth ? node.width : node.rightChildWidth;
                 const height = node.height > node.rightChildHeight ? node.height : node.rightChildHeight;
-                node.parent.rightChildWidth += width + gapX;
+                node.parent.rightChildWidth = Math.max(node.parent.rightChildWidth, node.width + node.rightChildWidth + gapX);
                 node.parent.rightChildHeight += height + gapY;
             }
         }
@@ -140,9 +137,9 @@ function calculateChildDimensions(nodes: Map<string, TreeNode>, gapX: number, ga
 
 
 // ルートノードの位置を計算し設定する関数
-function setRootNodePosition(rootNode: TreeNode) {
-    rootNode.x = rootNode.leftChildWidth;
-    rootNode.y = Math.max(rootNode.leftChildHeight, rootNode.rightChildHeight) / 2;
+function setRootNodePosition(rootNode: TreeNode, svgPadding: number) {
+    rootNode.x = rootNode.leftChildWidth + svgPadding / 2;
+    rootNode.y = Math.max(rootNode.leftChildHeight, rootNode.rightChildHeight) / 2 + svgPadding / 2;
     console.log("rootNode.x: " + rootNode.x);
     console.log("rootNode.y: " + rootNode.y);
 }
@@ -217,12 +214,33 @@ function createSvgWithConnectedRects(node: TreeNode, fontSize: number, padding: 
     return `${svgRects}${svgLines}`;
 }
 
+export async function POST(request: NextRequest) {
+    const json = await request.json();
+    const type = json.type;
+    const code = json.code;
+    return generateMindmap(code, type);
+}
+
 
 // GETメソッド用の関数
 export async function GET(request: NextRequest) {
     const type = request.nextUrl.searchParams.get('type');
 
-    const code = `
+    const code1 = `
+ top
+  基本概念の理解
+   Javaの歴史と特徴
+   オブジェクト指向プログラミング
+    クラスとオブジェクト
+    継承とポリモーフィズム
+    カプセル化と抽象化
+   データ型と変数
+    プリミティブ型
+    参照型
+`;
+    console.log(code1);
+
+    const code2 = `
  top
   基本概念の理解
    Javaの歴史と特徴
@@ -240,7 +258,63 @@ export async function GET(request: NextRequest) {
     IntelliJ IDEA
     NetBeans
 `;
+    console.log(code2);
 
+    const code3 = `
+ top
+  基本概念の理解
+   Javaの歴史と特徴
+   オブジェクト指向プログラミング
+    クラスとオブジェクト
+    継承とポリモーフィズム
+    カプセル化と抽象化
+   データ型と変数
+    プリミティブ型
+    参照型
+  開発環境の設定
+   JDKのインストール
+   IDEの選択と設定
+    Eclipse
+    IntelliJ IDEA
+    NetBeans
+  デバッグ
+   デバッグの基本
+   デバッグツールの利用
+   デバッグの実践
+`;
+    console.log(code3);
+
+    const code4 = `
+ top
+  基本概念の理解
+   Javaの歴史と特徴
+   オブジェクト指向プログラミング
+    クラスとオブジェクト
+    継承とポリモーフィズム
+    カプセル化と抽象化
+   データ型と変数
+    プリミティブ型
+    参照型
+  開発環境の設定
+   JDKのインストール
+   IDEの選択と設定
+    Eclipse
+    IntelliJ IDEA
+    NetBeans
+  デバッグ
+   デバッグの基本
+   デバッグツールの利用
+   デバッグの実践
+  テスト
+   テストの基本
+   テストツールの利用について考える
+`;
+    console.log(code4);
+
+    return generateMindmap(code1, type);
+}
+
+function generateMindmap(code: string, type: string) {
     // コードをパースしてTreeNodeのMapを作成
     let allNodes = parseCodeToTreeNodes(code);
     const rootNode = allNodes.get('0');
@@ -266,7 +340,8 @@ export async function GET(request: NextRequest) {
     calculateChildDimensions(rightNodes, gapX, gapY);
 
     // ルートノードの位置を設定
-    setRootNodePosition(rootNode);
+    const svgPadding = 30;
+    setRootNodePosition(rootNode, svgPadding);
 
     // 各ノードの位置を計算
     calculatePositionForNodes(leftNodes, gapX, gapY);
@@ -282,7 +357,6 @@ export async function GET(request: NextRequest) {
     rightNodes.forEach((node) => {
         svgRight += createSvgWithConnectedRects(node, fontSize, padding);
     });
-    const svgPadding = 30;
     const totalWidth = Math.max(...Array.from(rightNodes.values()).map(node => node.x + node.width)) + svgPadding;
     const totalHeight = Math.max(...Array.from(leftNodes.values()).map(node => node.y + node.height), ...Array.from(rightNodes.values()).map(node => node.y + node.height)) + svgPadding;
     const svg = `
