@@ -31,8 +31,12 @@ function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, g
     sortedNodes.forEach((node) => {
         console.log(node.path + " " + node.text + " " + node.childWidth + " " + node.childHeight);
         const parentNode = node.parent;
-        // nodesにはルートノードが含まれないため、必ずparentNodeが存在する。
-        const currentX = parentNode.x + parentNode.width + gapX;
+
+        // ノードの枝が左側に伸びるか右側に伸びるかをdirectionで判定
+        const currentX = node.direction === "left"
+            ? parentNode.x - node.width - gapX
+            : parentNode.x + parentNode.width + gapX;
+
         const pathArr = node.path.split('-');
         const siblingIndex = Number(pathArr[pathArr.length - 1]);
         let currentY = 0;
@@ -72,9 +76,17 @@ function createSvgWithConnectedRects(nodes: Map<string, TreeNode>, fontSize: num
         svgRects += node.generateSvg();
 
         if (node.parent) {
-            svgLines += `
+            if (node.direction === "left") {
+                // 左方向の場合
+                svgLines += `
+  <line x1="${node.parent.x}" y1="${node.parent.y + node.parent.height / 2}" x2="${node.x + node.width}" y2="${node.y + node.height / 2}" stroke="black" stroke-width="2"/>
+`;
+            } else {
+                // 右方向の場合
+                svgLines += `
   <line x1="${node.parent.x + node.parent.width}" y1="${node.parent.y + node.parent.height / 2}" x2="${node.x}" y2="${node.y + node.height / 2}" stroke="black" stroke-width="2"/>
 `;
+            }
         }
     });
 
@@ -163,9 +175,11 @@ function classifyDepthTwoNodes(nodes: Map<string, TreeNode>): { rightNodes: Map<
         if (index < halfIndex) {
             rightNodes.set(node.path, node);
             rightPaths.add(node.path);
+            node.direction = "right";
         } else {
             leftNodes.set(node.path, node);
             leftPaths.add(node.path);
+            node.direction = "left";
         }
     });
 
@@ -174,11 +188,13 @@ function classifyDepthTwoNodes(nodes: Map<string, TreeNode>): { rightNodes: Map<
         rightPaths.forEach((path) => {
             if (node.path.startsWith(path)) {
                 rightNodes.set(node.path, node);
+                node.direction = "right";
             }
         });
         leftPaths.forEach((path) => {
             if (node.path.startsWith(path)) {
                 leftNodes.set(node.path, node);
+                node.direction = "left";
             }
         });
     });
@@ -231,8 +247,8 @@ export async function GET(request: NextRequest) {
     // 各ノードの位置を計算
     const gapX = 25;
     const gapY = 15;
-    calculatePositionForNodes(leftNodes, gapX, gapY, nodes.get('0')?.x || 0);
-    calculatePositionForNodes(rightNodes, gapX, gapY, nodes.get('0')?.x || 0);
+    calculatePositionForNodes(leftNodes, gapX, gapY);
+    calculatePositionForNodes(rightNodes, gapX, gapY);
 
     // TreeNodeに基づいてSVGを生成
     const svg = createSvgWithConnectedRects(nodes, fontSize, padding);

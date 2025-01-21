@@ -11,6 +11,7 @@ export class TreeNode {
     fontSize: number; // ノードのフォントサイズ
     childWidth: number; // 子ノードの合計幅
     childHeight: number; // 子ノードの合計高さ
+    direction: string; // ノードの方向 ("left" または "right")
 
     constructor(text: string, path: string, parent: TreeNode | null) {
         this.text = text;
@@ -24,6 +25,7 @@ export class TreeNode {
         this.fontSize = 0;
         this.childWidth = 0;
         this.childHeight = 0;
+        this.direction = ""; // 初期値は空文字列
     }
 
     // ノードの位置とサイズを設定するメソッド
