@@ -10,20 +10,35 @@ function calculateSizeForNodes(nodes: Map<string, TreeNode>, fontSize: number, p
     });
 }
 
+// ルートノードの位置を計算し設定する関数
+function setRootNodePosition(nodes: Map<string, TreeNode>, leftNodes: Map<string, TreeNode>) {
+    const rootNode = nodes.get('0');
+    if (!rootNode) return;
+
+    const maxLeftNodeWidth = Math.max(...Array.from(leftNodes.values()).map(node => node.width + node.childWidth));
+    console.log("Max Left Node Width for Root Node:", maxLeftNodeWidth);
+
+    rootNode.x = maxLeftNodeWidth;
+    rootNode.y = rootNode.childHeight / 2;
+}
+
 // ノードの位置を計算する関数
 function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, gapY: number) {
     console.log("# calculatePositionForNodes");
+
+    // pathの値で辞書順ソート。結果的に入力テキストと同じ順になる。
     const sortedNodes = Array.from(nodes.values()).sort((a, b) => a.path.localeCompare(b.path));
     sortedNodes.forEach((node) => {
         console.log(node.path + " " + node.text + " " + node.childWidth + " " + node.childHeight);
         const parentNode = node.parent;
-        const currentX = parentNode ? parentNode.x + parentNode.width + gapX : 0;
+        // nodesにはルートノードが含まれないため、必ずparentNodeが存在する。
+        const currentX = parentNode.x + parentNode.width + gapX;
         const pathArr = node.path.split('-');
         const siblingIndex = Number(pathArr[pathArr.length - 1]);
         let currentY = 0;
 
         if (siblingIndex === 0) {
-            currentY = parentNode ? parentNode.y - parentNode.childHeight / 2 : 0;
+            currentY = parentNode.y - parentNode.childHeight / 2;
         } else {
             const siblingPath = pathArr.slice(0, -1).join('-') + '-' + (siblingIndex - 1);
             if (nodes.get(siblingPath)) {
@@ -40,9 +55,7 @@ function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, g
         node.bottom = node.y + height / 2;
 
         // 親ノードのbottomを更新
-        if (parentNode) {
-            parentNode.setBottom(node.bottom);
-        }
+        parentNode.setBottom(node.bottom);
     });
 }
 
@@ -133,6 +146,46 @@ function calculateAndLogChildDimensions(nodes: Map<string, TreeNode>) {
     });
 }
 
+// 深さ2のノードをrightNodesとleftNodesに分類する関数
+function classifyDepthTwoNodes(nodes: Map<string, TreeNode>): { rightNodes: Map<string, TreeNode>, leftNodes: Map<string, TreeNode> } {
+    const rightNodes = new Map<string, TreeNode>();
+    const leftNodes = new Map<string, TreeNode>();
+
+    // 深さ2のノードを抽出
+    const depthTwoNodes = Array.from(nodes.values()).filter(node => node.path.split('-').length === 2);
+
+    // ノードを半分に分ける
+    const halfIndex = Math.ceil(depthTwoNodes.length / 2);
+    const rightPaths = new Set<string>();
+    const leftPaths = new Set<string>();
+
+    depthTwoNodes.forEach((node, index) => {
+        if (index < halfIndex) {
+            rightNodes.set(node.path, node);
+            rightPaths.add(node.path);
+        } else {
+            leftNodes.set(node.path, node);
+            leftPaths.add(node.path);
+        }
+    });
+
+    // 子ノードを含める
+    nodes.forEach((node) => {
+        rightPaths.forEach((path) => {
+            if (node.path.startsWith(path)) {
+                rightNodes.set(node.path, node);
+            }
+        });
+        leftPaths.forEach((path) => {
+            if (node.path.startsWith(path)) {
+                leftNodes.set(node.path, node);
+            }
+        });
+    });
+
+    return { rightNodes, leftNodes };
+}
+
 // GETメソッド用の関数
 export async function GET(request: NextRequest) {
     const type = request.nextUrl.searchParams.get('type');
@@ -167,10 +220,19 @@ export async function GET(request: NextRequest) {
     // 子ノードの合計幅と高さを計算し、コンソールに表示
     calculateAndLogChildDimensions(nodes);
 
+    // 深さ2のノードを分類
+    const { rightNodes, leftNodes } = classifyDepthTwoNodes(nodes);
+    console.log("Right Nodes:", Array.from(rightNodes.keys()));
+    console.log("Left Nodes:", Array.from(leftNodes.keys()));
+
+    // ルートノードの位置を設定
+    setRootNodePosition(nodes, leftNodes);
+
     // 各ノードの位置を計算
     const gapX = 25;
     const gapY = 15;
-    calculatePositionForNodes(nodes, gapX, gapY);
+    calculatePositionForNodes(leftNodes, gapX, gapY, nodes.get('0')?.x || 0);
+    calculatePositionForNodes(rightNodes, gapX, gapY, nodes.get('0')?.x || 0);
 
     // TreeNodeに基づいてSVGを生成
     const svg = createSvgWithConnectedRects(nodes, fontSize, padding);
