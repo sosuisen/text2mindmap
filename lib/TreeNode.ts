@@ -32,22 +32,6 @@ export class TreeNode {
         this.direction = ""; // 初期値は空文字列
     }
 
-    // ノードの位置とサイズを設定するメソッド
-    setPositionAndSize(x: number, y: number, fontSize: number, padding: number) {
-        const textLength = this.text.length;
-        this.width = textLength * fontSize + padding * 2;
-        this.height = fontSize + padding * 2;
-        this.x = x;
-        this.y = y;
-        this.bottom = y + this.height;
-        this.fontSize = fontSize;
-
-        // 親ノードのbottomを更新
-        if (this.parent) {
-            this.parent.setBottom(this.bottom);
-        }
-    }
-
     // 親ノードのbottomを更新するメソッド
     setBottom(childBottom: number) {
         if (childBottom > this.bottom) {
@@ -62,7 +46,7 @@ export class TreeNode {
     generateSvg(): string {
         return `
 <rect x="${this.x}" y="${this.y}" width="${this.width}" height="${this.height}" rx="10" ry="10" fill="lightblue" stroke="black" stroke-width="2"/>
-<text x="${this.x + this.width / 2}" y="${this.y + this.height / 2}" font-size="${this.fontSize}" text-anchor="middle" alignment-baseline="central" fill="black">${this.text}</text>
+<text x="${this.x + this.width / 2}" y="${this.y + this.height / 2}" font-size="${this.fontSize}px" text-anchor="middle" alignment-baseline="central" fill="black">${this.text}</text>
 `;
     }
 }

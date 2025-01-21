@@ -38,10 +38,26 @@ function parseCodeToTreeNodes(code: string): Map<string, TreeNode> {
     return allNodes;
 }
 
+// 文字列の長さを計算する関数 (1byte文字=1, その他=2)
+function calculateStringLength(str: string): number {
+    let length = 0;
+    for (let i = 0; i < str.length; i++) {
+        // 1byte文字(ASCII文字)かどうかを判定
+        if (str.charCodeAt(i) <= 0x7F) {
+            length += 1;
+        } else {
+            length += 2;
+        }
+    }
+    return length;
+}
+
+
 // 文字数に基づいて矩形サイズを計算する関数
 function calculateSizeForNodes(nodes: Map<string, TreeNode>, fontSize: number, padding: number) {
     nodes.forEach((node) => {
-        const textLength = node.text.length;
+        node.fontSize = fontSize;
+        const textLength = calculateStringLength(node.text);
         node.width = textLength * fontSize + padding * 2;
         node.height = fontSize + padding * 2;
     });
@@ -187,12 +203,9 @@ function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, g
 }
 
 // SVGを生成する関数
-function createSvgWithConnectedRects(node: TreeNode, fontSize: number, padding: number) {
+function createSvgWithConnectedRects(node: TreeNode) {
     let svgRects = '';
     let svgLines = '';
-
-    // 位置とサイズを設定
-    node.setPositionAndSize(node.x, node.y, fontSize, padding);
 
     // SVGを生成
     svgRects += node.generateSvg();
@@ -348,19 +361,19 @@ function generateMindmap(code: string, type: string) {
     calculatePositionForNodes(rightNodes, gapX, gapY);
 
     // TreeNodeに基づいてSVGを生成
-    const svgRoot = createSvgWithConnectedRects(rootNode, fontSize, padding);
+    const svgRoot = createSvgWithConnectedRects(rootNode);
     let svgLeft = "";
     leftNodes.forEach((node) => {
-        svgLeft += createSvgWithConnectedRects(node, fontSize, padding);
+        svgLeft += createSvgWithConnectedRects(node);
     });
     let svgRight = "";
     rightNodes.forEach((node) => {
-        svgRight += createSvgWithConnectedRects(node, fontSize, padding);
+        svgRight += createSvgWithConnectedRects(node);
     });
     const totalWidth = Math.max(...Array.from(rightNodes.values()).map(node => node.x + node.width)) + svgPadding;
     const totalHeight = Math.max(...Array.from(leftNodes.values()).map(node => node.y + node.height), ...Array.from(rightNodes.values()).map(node => node.y + node.height)) + svgPadding;
     const svg = `
-<svg id="mindmap-svg" width="${totalWidth}" height="${totalHeight}" xmlns="http://www.w3.org/2000/svg">
+<svg id="mindmap-svg" viewBox="0 0 ${totalWidth} ${totalHeight}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
 ${svgRoot}
 ${svgLeft}
 ${svgRight}
