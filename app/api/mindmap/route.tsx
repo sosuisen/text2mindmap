@@ -11,12 +11,14 @@ function calculateSizeForNodes(nodes: Map<string, TreeNode>, fontSize: number, p
 }
 
 // ルートノードの位置を計算し設定する関数
-function setRootNodePosition(nodes: Map<string, TreeNode>, leftNodes: Map<string, TreeNode>) {
+function setRootNodePosition(nodes: Map<string, TreeNode>) {
     const rootNode = nodes.get('0');
     if (!rootNode) return;
 
     rootNode.x = rootNode.leftChildWidth;
     rootNode.y = Math.max(rootNode.leftChildHeight, rootNode.rightChildHeight) / 2;
+    console.log("rootNode.x: " + rootNode.x);
+    console.log("rootNode.y: " + rootNode.y);
 }
 
 // ノードの位置を計算する関数
@@ -38,7 +40,7 @@ function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, g
         const siblingIndex = Number(pathArr[pathArr.length - 1]);
         let currentY = 0;
 
-        const childHeight = node.direction === "left" ? node.leftChildHeight : node.rightChildHeight;
+        const childHeight = node.direction === "left" ? parentNode.leftChildHeight : parentNode.rightChildHeight;
         if (siblingIndex === 0) {
             currentY = parentNode.y - childHeight / 2;
         } else {
@@ -136,22 +138,23 @@ function parseCodeToTreeNodes(code: string): Map<string, TreeNode> {
 }
 
 // 子ノードの合計幅と高さを計算する関数
-function calculateChildDimensions(nodes: Map<string, TreeNode>) {
+function calculateChildDimensions(nodes: Map<string, TreeNode>, gapX: number, gapY: number) {
     // ノードをpathの長さでソートして、深い階層から処理する
     const sortedNodes = Array.from(nodes.values()).sort((a, b) => b.path.length - a.path.length);
 
     sortedNodes.forEach((node) => {
         console.log(node.path + " " + node.text + " " + node.width + " " + node.height);
         if (node.parent) {
-            const width = node.width > node.leftChildWidth + node.rightChildWidth ? node.width : node.leftChildWidth + node.rightChildWidth;
-            const height = node.height > node.leftChildHeight + node.rightChildHeight ? node.height : node.leftChildHeight + node.rightChildHeight;
-
             if (node.direction === "left") {
-                node.parent.leftChildWidth += width;
-                node.parent.leftChildHeight += height;
+                const width = node.width > node.leftChildWidth ? node.width : node.leftChildWidth;
+                const height = node.height > node.leftChildHeight ? node.height : node.leftChildHeight;
+                node.parent.leftChildWidth += width + gapX;
+                node.parent.leftChildHeight += height + gapY;
             } else {
-                node.parent.rightChildWidth += width;
-                node.parent.rightChildHeight += height;
+                const width = node.width > node.rightChildWidth ? node.width : node.rightChildWidth;
+                const height = node.height > node.rightChildHeight ? node.height : node.rightChildHeight;
+                node.parent.rightChildWidth += width + gapX;
+                node.parent.rightChildHeight += height + gapY;
             }
         }
     });
@@ -187,8 +190,10 @@ function classifyDepthTwoNodes(nodes: Map<string, TreeNode>): { rightNodes: Map<
         }
     });
 
-    // 子ノードを含める
+    // 子ノードを含める（ルートノードは除外）
     nodes.forEach((node) => {
+        if (node.path === '0') return; // ルートノードをスキップ
+
         rightPaths.forEach((path) => {
             if (node.path.startsWith(path)) {
                 rightNodes.set(node.path, node);
@@ -242,16 +247,17 @@ export async function GET(request: NextRequest) {
     console.log("Right Nodes:", Array.from(rightNodes.keys()));
     console.log("Left Nodes:", Array.from(leftNodes.keys()));
 
-    // 子ノードの合計幅と高さを計算し、コンソールに表示
-    calculateChildDimensions(leftNodes);
-    calculateChildDimensions(rightNodes);
-
-    // ルートノードの位置を設定
-    setRootNodePosition(nodes, leftNodes);
-
-    // 各ノードの位置を計算
     const gapX = 25;
     const gapY = 15;
+
+    // 子ノードの合計幅と高さを計算し、コンソールに表示
+    calculateChildDimensions(leftNodes, gapX, gapY);
+    calculateChildDimensions(rightNodes, gapX, gapY);
+
+    // ルートノードの位置を設定
+    setRootNodePosition(nodes);
+
+    // 各ノードの位置を計算
     calculatePositionForNodes(leftNodes, gapX, gapY);
     calculatePositionForNodes(rightNodes, gapX, gapY);
 
