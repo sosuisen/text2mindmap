@@ -231,17 +231,18 @@ function createSvgWithConnectedRects(node: TreeNode) {
 
     if (node.parent) {
         const color = node.borderColor;
-        if (node.direction === "left") {
-            // 左方向の場合
-            svgLines += `
-  <line x1="${node.parent.x}" y1="${node.parent.y + node.parent.height / 2}" x2="${node.x + node.width}" y2="${node.y + node.height / 2}" stroke="${color}" stroke-width="2"/>
+        const startX = node.direction === "left" ? node.parent.x : node.parent.x + node.parent.width;
+        const startY = node.parent.y + node.parent.height / 2;
+        const endX = node.direction === "left" ? node.x + node.width : node.x;
+        const endY = node.y + node.height / 2;
+
+        // スプライン曲線を描画
+        const controlPointX1 = startX + (endX - startX) / 3;
+        const controlPointX2 = startX + 2 * (endX - startX) / 3;
+
+        svgLines += `
+  <path d="M ${startX} ${startY} C ${controlPointX1} ${startY}, ${controlPointX2} ${endY}, ${endX} ${endY}" stroke="${color}" stroke-width="2" fill="none"/>
 `;
-        } else {
-            // 右方向の場合
-            svgLines += `
-  <line x1="${node.parent.x + node.parent.width}" y1="${node.parent.y + node.parent.height / 2}" x2="${node.x}" y2="${node.y + node.height / 2}" stroke="${color}" stroke-width="2"/>
-`;
-        }
     }
 
     return `${svgRects}${svgLines}`;
