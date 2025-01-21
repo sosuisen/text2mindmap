@@ -15,11 +15,8 @@ function setRootNodePosition(nodes: Map<string, TreeNode>, leftNodes: Map<string
     const rootNode = nodes.get('0');
     if (!rootNode) return;
 
-    const maxLeftNodeWidth = Math.max(...Array.from(leftNodes.values()).map(node => node.width + node.childWidth));
-    console.log("Max Left Node Width for Root Node:", maxLeftNodeWidth);
-
-    rootNode.x = maxLeftNodeWidth;
-    rootNode.y = rootNode.childHeight / 2;
+    rootNode.x = rootNode.leftChildWidth;
+    rootNode.y = Math.max(rootNode.leftChildHeight, rootNode.rightChildHeight) / 2;
 }
 
 // ノードの位置を計算する関数
@@ -29,7 +26,7 @@ function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, g
     // pathの値で辞書順ソート。結果的に入力テキストと同じ順になる。
     const sortedNodes = Array.from(nodes.values()).sort((a, b) => a.path.localeCompare(b.path));
     sortedNodes.forEach((node) => {
-        console.log(node.path + " " + node.text + " " + node.childWidth + " " + node.childHeight);
+        console.log(node.path + " " + node.text + " " + node.leftChildWidth + " " + node.leftChildHeight + " " + node.rightChildWidth + " " + node.rightChildHeight);
         const parentNode = node.parent;
 
         // ノードの枝が左側に伸びるか右側に伸びるかをdirectionで判定
@@ -41,8 +38,9 @@ function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, g
         const siblingIndex = Number(pathArr[pathArr.length - 1]);
         let currentY = 0;
 
+        const childHeight = node.direction === "left" ? node.leftChildHeight : node.rightChildHeight;
         if (siblingIndex === 0) {
-            currentY = parentNode.y - parentNode.childHeight / 2;
+            currentY = parentNode.y - childHeight / 2;
         } else {
             const siblingPath = pathArr.slice(0, -1).join('-') + '-' + (siblingIndex - 1);
             if (nodes.get(siblingPath)) {
@@ -54,7 +52,7 @@ function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, g
 
         node.x = currentX;
 
-        const height = node.height > node.childHeight ? node.height : node.childHeight;
+        const height = node.height > childHeight ? node.height : childHeight + 10;
         node.y = currentY + height / 2;
         node.bottom = node.y + height / 2;
 
@@ -137,24 +135,30 @@ function parseCodeToTreeNodes(code: string): Map<string, TreeNode> {
     return nodes;
 }
 
-// 子ノードの合計幅と高さを計算し、コンソールに表示する関数
-function calculateAndLogChildDimensions(nodes: Map<string, TreeNode>) {
+// 子ノードの合計幅と高さを計算する関数
+function calculateChildDimensions(nodes: Map<string, TreeNode>) {
     // ノードをpathの長さでソートして、深い階層から処理する
     const sortedNodes = Array.from(nodes.values()).sort((a, b) => b.path.length - a.path.length);
 
     sortedNodes.forEach((node) => {
         console.log(node.path + " " + node.text + " " + node.width + " " + node.height);
         if (node.parent) {
-            const widht = node.width > node.childWidth ? node.width : node.childWidth;
-            const height = node.height > node.childHeight ? node.height : node.childHeight;
-            node.parent.childWidth += widht;
-            node.parent.childHeight += height;
+            const width = node.width > node.leftChildWidth + node.rightChildWidth ? node.width : node.leftChildWidth + node.rightChildWidth;
+            const height = node.height > node.leftChildHeight + node.rightChildHeight ? node.height : node.leftChildHeight + node.rightChildHeight;
+
+            if (node.direction === "left") {
+                node.parent.leftChildWidth += width;
+                node.parent.leftChildHeight += height;
+            } else {
+                node.parent.rightChildWidth += width;
+                node.parent.rightChildHeight += height;
+            }
         }
     });
 
     // コンソールにchildHeightを一覧表示
     nodes.forEach((node, path) => {
-        console.log(`Node path: ${path}, childHeight: ${node.childHeight}`);
+        console.log(`Node path: ${path}, leftChildHeight: ${node.leftChildHeight}, rightChildHeight: ${node.rightChildHeight}`);
     });
 }
 
@@ -233,13 +237,14 @@ export async function GET(request: NextRequest) {
     const padding = 10;
     calculateSizeForNodes(nodes, fontSize, padding);
 
-    // 子ノードの合計幅と高さを計算し、コンソールに表示
-    calculateAndLogChildDimensions(nodes);
-
     // 深さ2のノードを分類
     const { rightNodes, leftNodes } = classifyDepthTwoNodes(nodes);
     console.log("Right Nodes:", Array.from(rightNodes.keys()));
     console.log("Left Nodes:", Array.from(leftNodes.keys()));
+
+    // 子ノードの合計幅と高さを計算し、コンソールに表示
+    calculateChildDimensions(leftNodes);
+    calculateChildDimensions(rightNodes);
 
     // ルートノードの位置を設定
     setRootNodePosition(nodes, leftNodes);

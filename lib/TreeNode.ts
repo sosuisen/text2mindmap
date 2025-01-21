@@ -9,8 +9,10 @@ export class TreeNode {
     height: number; // ノードの高さ
     bottom: number; // ノードの底のY座標
     fontSize: number; // ノードのフォントサイズ
-    childWidth: number; // 子ノードの合計幅
-    childHeight: number; // 子ノードの合計高さ
+    leftChildWidth: number; // 左子ノードの合計幅
+    rightChildWidth: number; // 右子ノードの合計幅
+    leftChildHeight: number; // 左子ノードの合計高さ
+    rightChildHeight: number; // 右子ノードの合計高さ
     direction: string; // ノードの方向 ("left" または "right")
 
     constructor(text: string, path: string, parent: TreeNode | null) {
@@ -23,8 +25,10 @@ export class TreeNode {
         this.height = 0;
         this.bottom = 0;
         this.fontSize = 0;
-        this.childWidth = 0;
-        this.childHeight = 0;
+        this.leftChildWidth = 0;
+        this.rightChildWidth = 0;
+        this.leftChildHeight = 0;
+        this.rightChildHeight = 0;
         this.direction = ""; // 初期値は空文字列
     }
 
