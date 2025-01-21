@@ -80,10 +80,10 @@ export class TreeNode {
 
 
         } else {
-            this.bgColor = "#ffffff";
+            this.bgColor = "#e0e0e0";
             this.textColor = "#000000";
             this.borderColor = "#000000";
-            this.borderWidth = 2;
+            this.borderWidth = 0;
         }
 
     }
@@ -101,8 +101,8 @@ export class TreeNode {
         if (this.path === "0") {
             const radius = this.width / 2;
             return `
-<circle cx="${this.x + radius}" cy="${this.y + radius}" r="${radius}" fill="${this.bgColor}" stroke="${this.borderColor}" stroke-width="${this.borderWidth}"/>
-<text x="${this.x + radius}" y="${this.y + radius}" font-size="${this.fontSize}px" text-anchor="middle" alignment-baseline="central" fill="${this.textColor}">${this.text}</text>
+<circle cx="${this.x + radius}" cy="${this.y}" r="${radius}" fill="${this.bgColor}" stroke="${this.borderColor}" stroke-width="${this.borderWidth}"/>
+<text x="${this.x + radius}" y="${this.y}" font-size="${this.fontSize}px" text-anchor="middle" alignment-baseline="central" fill="${this.textColor}">${this.text}</text>
 `;
         } else if (this.path.split('-').length >= 4) {
             const anchor = this.direction === "left" ? "right" : "left";

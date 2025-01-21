@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TreeNode } from '../../../lib/TreeNode';
 
-
 function escapeForSVG(text) {
     return text
         .replace(/&/g, '&amp;')
@@ -67,16 +66,20 @@ function calculateStringLength(str: string): number {
 function calculateSizeForNodes(nodes: Map<string, TreeNode>, fontSize: number, padding: number, broadChar: boolean) {
     nodes.forEach((node) => {
         node.fontSize = fontSize;
+        if (node.path === "0") {
+            node.fontSize = fontSize * 1.5;
+        }
         if (broadChar) {
             // When called from Agent.ai, calculate based on text length instead of character count 
             const textLength = calculateStringLength(node.text);
-            node.width = textLength * fontSize + padding * 2;
-            node.height = fontSize + padding * 2;
+            node.width = textLength * node.fontSize + padding * 2;
+            node.height = node.fontSize + padding * 2;
         } else {
-            node.width = node.text.length * fontSize + padding * 2;
-            node.height = fontSize + padding * 2;
+            node.width = node.text.length * node.fontSize + padding * 2;
+            node.height = node.fontSize + padding * 2;
         }
         if (node.path === "0") {
+            node.width *= 0.6;
             node.height = node.width;
         }
     });
@@ -234,7 +237,10 @@ function createSvgWithConnectedRects(node: TreeNode) {
     if (node.parent) {
         const color = node.borderColor;
         const startX = node.direction === "left" ? node.parent.x : node.parent.x + node.parent.width;
-        const startY = node.parent.y + node.parent.height / 2;
+        let startY = node.parent.y + node.parent.height / 2;
+        if (node.parent.path === "0") {
+            startY -= node.parent.height / 2;
+        }
         const endX = node.direction === "left" ? node.x + node.width : node.x;
         const endY = node.y + node.height / 2;
 
@@ -339,7 +345,7 @@ export async function GET(request: NextRequest) {
 `;
 
     const code4 = `
- top
+ オブジェクト指向プログラミング
   基本概念の理解
    Javaの歴史と特徴
    オブジェクト指向プログラミング
@@ -366,7 +372,7 @@ export async function GET(request: NextRequest) {
 
     return generateMindmap(code4, type, broadChar);
 }
-*/
+    */
 
 function generateMindmap(code: string, type: string, broadChar: boolean) {
     // Parse the code and create a Map of TreeNodes
@@ -415,9 +421,9 @@ function generateMindmap(code: string, type: string, broadChar: boolean) {
     const totalHeight = Math.max(...Array.from(leftNodes.values()).map(node => node.y + node.height), ...Array.from(rightNodes.values()).map(node => node.y + node.height)) + svgPadding;
     const svg = `
 <svg id="mindmap-svg" viewBox="0 0 ${totalWidth} ${totalHeight}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-${svgRoot}
 ${svgLeft}
 ${svgRight}
+${svgRoot}
 </svg>
 `;
 
