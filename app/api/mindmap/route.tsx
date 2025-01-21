@@ -76,6 +76,9 @@ function calculateSizeForNodes(nodes: Map<string, TreeNode>, fontSize: number, p
             node.width = node.text.length * fontSize + padding * 2;
             node.height = fontSize + padding * 2;
         }
+        if (node.path === "0") {
+            node.height = node.width;
+        }
     });
 }
 
@@ -227,15 +230,16 @@ function createSvgWithConnectedRects(node: TreeNode) {
     svgRects += node.generateSvg();
 
     if (node.parent) {
+        const color = node.borderColor;
         if (node.direction === "left") {
             // 左方向の場合
             svgLines += `
-  <line x1="${node.parent.x}" y1="${node.parent.y + node.parent.height / 2}" x2="${node.x + node.width}" y2="${node.y + node.height / 2}" stroke="black" stroke-width="2"/>
+  <line x1="${node.parent.x}" y1="${node.parent.y + node.parent.height / 2}" x2="${node.x + node.width}" y2="${node.y + node.height / 2}" stroke="${color}" stroke-width="2"/>
 `;
         } else {
             // 右方向の場合
             svgLines += `
-  <line x1="${node.parent.x + node.parent.width}" y1="${node.parent.y + node.parent.height / 2}" x2="${node.x}" y2="${node.y + node.height / 2}" stroke="black" stroke-width="2"/>
+  <line x1="${node.parent.x + node.parent.width}" y1="${node.parent.y + node.parent.height / 2}" x2="${node.x}" y2="${node.y + node.height / 2}" stroke="${color}" stroke-width="2"/>
 `;
         }
     }

@@ -53,6 +53,7 @@ export class TreeNode {
     textColor: string; // ノードのテキストの色
     bgColor: string; // ノードの色
     borderColor: string; // ノードの枠の色
+    borderWidth: number; // ノードの枠の太さ
 
     constructor(text: string, path: string, parent: TreeNode | null) {
         this.text = text;
@@ -72,15 +73,26 @@ export class TreeNode {
         // pathの2階層目の値を取得し、それをインデックスとして色を設定
         const pathParts = path.split('-');
         if (pathParts.length >= 2) {
-            this.borderColor = lightenColor(colors[parseInt(pathParts[1]) % colors.length], (pathParts.length - 2) * 10);
-            this.bgColor = lightenColor(colors[parseInt(pathParts[1]) % colors.length], (pathParts.length - 1) * 20);
-            this.textColor = "#ffffff";
+            if (pathParts.length >= 4) {
+                this.borderColor = lightenColor(colors[parseInt(pathParts[1]) % colors.length], (pathParts.length - 1) * 10);
+                this.bgColor = lightenColor(colors[parseInt(pathParts[1]) % colors.length], (pathParts.length - 1) * 20);
+                this.borderWidth = 0;
+                this.textColor = this.borderColor;
+            } else {
+                this.borderColor = lightenColor(colors[parseInt(pathParts[1]) % colors.length], (pathParts.length - 1) * 10);
+                this.bgColor = lightenColor(colors[parseInt(pathParts[1]) % colors.length], (pathParts.length - 1) * 20);
+                this.borderWidth = 2;
+                this.textColor = "#ffffff";
+            }
+
 
         } else {
             this.bgColor = "#ffffff"; // ルートノードは白
             this.textColor = "#000000"; // ルートノードは黒
             this.borderColor = "#000000"; // ルートノードは黒
+            this.borderWidth = 2;
         }
+
     }
 
     // 親ノードのbottomを更新するメソッド
@@ -95,9 +107,26 @@ export class TreeNode {
 
     // SVGを生成するメソッド
     generateSvg(): string {
-        return `
-<rect x="${this.x}" y="${this.y}" width="${this.width}" height="${this.height}" rx="10" ry="10" fill="${this.bgColor}" stroke="${this.borderColor}" stroke-width="2"/>
+        if (this.path === "0") {
+            // ルートノードの場合は円形にする
+            const radius = this.width / 2;
+            return `
+<circle cx="${this.x + radius}" cy="${this.y + radius}" r="${radius}" fill="${this.bgColor}" stroke="${this.borderColor}" stroke-width="${this.borderWidth}"/>
+<text x="${this.x + radius}" y="${this.y + radius}" font-size="${this.fontSize}px" text-anchor="middle" alignment-baseline="central" fill="${this.textColor}">${this.text}</text>
+`;
+        } else if (this.path.split('-').length >= 4) {
+            // pathParts.length >= 4 の場合は下線付きテキスト
+            const anchor = this.direction === "left" ? "right" : "left";
+            const xOffset = this.direction === "left" ? -10 : 10;
+            return `
+<text x="${this.x + xOffset}" y="${this.y + this.height / 2}" font-size="${this.fontSize}px" text-anchor="${anchor}" alignment-baseline="central" fill="${this.textColor}" text-decoration="underline">${this.text}</text>
+`;
+        } else {
+            // 通常のノードは角丸の長方形
+            return `
+<rect x="${this.x}" y="${this.y}" width="${this.width}" height="${this.height}" rx="10" ry="10" fill="${this.bgColor}" stroke="${this.borderColor}" stroke-width="${this.borderWidth}"/>
 <text x="${this.x + this.width / 2}" y="${this.y + this.height / 2}" font-size="${this.fontSize}px" text-anchor="middle" alignment-baseline="central" fill="${this.textColor}">${this.text}</text>
 `;
+        }
     }
 }
