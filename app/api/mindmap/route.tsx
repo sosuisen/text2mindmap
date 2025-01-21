@@ -11,6 +11,7 @@ function escapeForSVG(text) {
         .replace(/'/g, '&apos;');
 }
 
+
 // コードをパースしてTreeNodeのMapを作成する関数
 function parseCodeToTreeNodes(code: string): Map<string, TreeNode> {
     const allNodes = new Map<string, TreeNode>();
@@ -361,7 +362,7 @@ export async function GET(request: NextRequest) {
 `;
     console.log(code4);
 
-    return generateMindmap(code1, type, broadChar);
+    return generateMindmap(code4, type, broadChar);
 }
 
 function generateMindmap(code: string, type: string, broadChar: boolean) {
