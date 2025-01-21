@@ -11,22 +11,17 @@ const colors = [
     "#387A74",
 ];
 
-// hex形式の色を明るくする関数
 function lightenColor(hex: string, rate: number): string {
-    // #を除去して6桁のhex値を取得
     const color = hex.replace('#', '');
 
-    // R,G,Bの値を16進数から10進数に変換
     const r = parseInt(color.substring(0, 2), 16);
     const g = parseInt(color.substring(2, 4), 16);
     const b = parseInt(color.substring(4, 6), 16);
 
-    // 各色をrate%明るくする
     const newR = Math.min(255, Math.round(r + (255 - r) * (rate / 100)));
     const newG = Math.min(255, Math.round(g + (255 - g) * (rate / 100)));
     const newB = Math.min(255, Math.round(b + (255 - b) * (rate / 100)));
 
-    // 10進数を16進数に変換して2桁に揃える
     const rHex = newR.toString(16).padStart(2, '0');
     const gHex = newG.toString(16).padStart(2, '0');
     const bHex = newB.toString(16).padStart(2, '0');
@@ -34,26 +29,25 @@ function lightenColor(hex: string, rate: number): string {
     return `#${rHex}${gHex}${bHex}`;
 }
 
-// TreeNodeクラスの定義
 export class TreeNode {
     text: string;
     path: string;
     parent: TreeNode | null;
-    x: number; // ノードのX座標
-    y: number; // ノードのY座標
-    width: number; // ノードの幅
-    height: number; // ノードの高さ
-    bottom: number; // ノードの底のY座標
-    fontSize: number; // ノードのフォントサイズ
-    leftChildWidth: number; // 左子ノードの合計幅
-    rightChildWidth: number; // 右子ノードの合計幅
-    leftChildHeight: number; // 左子ノードの合計高さ
-    rightChildHeight: number; // 右子ノードの合計高さ
-    direction: string; // ノードの方向 ("left" または "right")
-    textColor: string; // ノードのテキストの色
-    bgColor: string; // ノードの色
-    borderColor: string; // ノードの枠の色
-    borderWidth: number; // ノードの枠の太さ
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    bottom: number;
+    fontSize: number;
+    leftChildWidth: number;
+    rightChildWidth: number;
+    leftChildHeight: number;
+    rightChildHeight: number;
+    direction: string;
+    textColor: string;
+    bgColor: string;
+    borderColor: string;
+    borderWidth: number;
 
     constructor(text: string, path: string, parent: TreeNode | null) {
         this.text = text;
@@ -69,8 +63,7 @@ export class TreeNode {
         this.rightChildWidth = 0;
         this.leftChildHeight = 0;
         this.rightChildHeight = 0;
-        this.direction = ""; // 初期値は空文字列
-        // pathの2階層目の値を取得し、それをインデックスとして色を設定
+        this.direction = "";
         const pathParts = path.split('-');
         if (pathParts.length >= 2) {
             if (pathParts.length >= 4) {
@@ -87,15 +80,14 @@ export class TreeNode {
 
 
         } else {
-            this.bgColor = "#ffffff"; // ルートノードは白
-            this.textColor = "#000000"; // ルートノードは黒
-            this.borderColor = "#000000"; // ルートノードは黒
+            this.bgColor = "#ffffff";
+            this.textColor = "#000000";
+            this.borderColor = "#000000";
             this.borderWidth = 2;
         }
 
     }
 
-    // 親ノードのbottomを更新するメソッド
     setBottom(childBottom: number) {
         if (childBottom > this.bottom) {
             this.bottom = childBottom;
@@ -105,24 +97,20 @@ export class TreeNode {
         }
     }
 
-    // SVGを生成するメソッド
     generateSvg(): string {
         if (this.path === "0") {
-            // ルートノードの場合は円形にする
             const radius = this.width / 2;
             return `
 <circle cx="${this.x + radius}" cy="${this.y + radius}" r="${radius}" fill="${this.bgColor}" stroke="${this.borderColor}" stroke-width="${this.borderWidth}"/>
 <text x="${this.x + radius}" y="${this.y + radius}" font-size="${this.fontSize}px" text-anchor="middle" alignment-baseline="central" fill="${this.textColor}">${this.text}</text>
 `;
         } else if (this.path.split('-').length >= 4) {
-            // pathParts.length >= 4 の場合は下線付きテキスト
             const anchor = this.direction === "left" ? "right" : "left";
             const xOffset = this.direction === "left" ? -10 : 10;
             return `
 <text x="${this.x + xOffset}" y="${this.y + this.height / 2}" font-size="${this.fontSize}px" text-anchor="${anchor}" alignment-baseline="central" fill="${this.textColor}" text-decoration="underline">${this.text}</text>
 `;
         } else {
-            // 通常のノードは角丸の長方形
             return `
 <rect x="${this.x}" y="${this.y}" width="${this.width}" height="${this.height}" rx="10" ry="10" fill="${this.bgColor}" stroke="${this.borderColor}" stroke-width="${this.borderWidth}"/>
 <text x="${this.x + this.width / 2}" y="${this.y + this.height / 2}" font-size="${this.fontSize}px" text-anchor="middle" alignment-baseline="central" fill="${this.textColor}">${this.text}</text>
