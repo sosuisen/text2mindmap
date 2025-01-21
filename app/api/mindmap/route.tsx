@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { TreeNode } from '../../../lib/TreeNode';
 
 
+function escapeForSVG(text) {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
+
 // コードをパースしてTreeNodeのMapを作成する関数
 function parseCodeToTreeNodes(code: string): Map<string, TreeNode> {
     const allNodes = new Map<string, TreeNode>();
@@ -10,7 +19,7 @@ function parseCodeToTreeNodes(code: string): Map<string, TreeNode> {
 
     lines.forEach((line) => {
         const depth = line.search(/\S/); // 行頭の空白文字の数をカウント
-        const text = line.trim();
+        const text = escapeForSVG(line.trim());
 
         // パスを計算
         while (pathStack.length > depth) {
@@ -54,12 +63,18 @@ function calculateStringLength(str: string): number {
 
 
 // 文字数に基づいて矩形サイズを計算する関数
-function calculateSizeForNodes(nodes: Map<string, TreeNode>, fontSize: number, padding: number) {
+function calculateSizeForNodes(nodes: Map<string, TreeNode>, fontSize: number, padding: number, broadChar: boolean) {
     nodes.forEach((node) => {
         node.fontSize = fontSize;
-        const textLength = calculateStringLength(node.text);
-        node.width = textLength * fontSize + padding * 2;
-        node.height = fontSize + padding * 2;
+        if (broadChar) {
+            // Agent.aiから呼ばれるときは、文字数ではなく、テキストの長さで計算する 
+            const textLength = calculateStringLength(node.text);
+            node.width = textLength * fontSize + padding * 2;
+            node.height = fontSize + padding * 2;
+        } else {
+            node.width = node.text.length * fontSize + padding * 2;
+            node.height = fontSize + padding * 2;
+        }
     });
 }
 
@@ -228,17 +243,39 @@ function createSvgWithConnectedRects(node: TreeNode) {
 }
 
 export async function POST(request: NextRequest) {
-    const json = await request.json();
-    const type = json.type;
-    const code = json.code;
-    return generateMindmap(code, type);
+    let type: string;
+    let code: string;
+    let broadChar: boolean;
+
+    const contentType = request.headers.get('content-type') || '';
+
+    if (contentType.includes('application/json')) {
+        // JSON形式のリクエストボディを処理
+        const json = await request.json();
+        type = json.type;
+        code = json.code;
+        broadChar = json.broadChar === true;
+    } else if (contentType.includes('application/x-www-form-urlencoded')) {
+        // form形式のリクエストボディを処理
+        const formData = await request.formData();
+        type = formData.get('type') as string;
+        code = formData.get('code') as string;
+        broadChar = formData.get('broadChar') === 'true';
+    } else {
+        return new NextResponse(JSON.stringify({ error: 'Unsupported content type' }), {
+            headers: { 'Content-Type': 'application/json' },
+            status: 400
+        });
+    }
+
+    return generateMindmap(code, type, broadChar);
 }
 
 
 // GETメソッド用の関数
 export async function GET(request: NextRequest) {
     const type = request.nextUrl.searchParams.get('type');
-
+    const broadChar = request.nextUrl.searchParams.get('broadChar') === 'true';
     const code1 = `
  top
   基本概念の理解
@@ -324,10 +361,10 @@ export async function GET(request: NextRequest) {
 `;
     console.log(code4);
 
-    return generateMindmap(code1, type);
+    return generateMindmap(code1, type, broadChar);
 }
 
-function generateMindmap(code: string, type: string) {
+function generateMindmap(code: string, type: string, broadChar: boolean) {
     // コードをパースしてTreeNodeのMapを作成
     let allNodes = parseCodeToTreeNodes(code);
     const rootNode = allNodes.get('0');
@@ -335,7 +372,7 @@ function generateMindmap(code: string, type: string) {
     // 各ノードの幅と高さを計算
     const fontSize = 10;
     const padding = 10;
-    calculateSizeForNodes(allNodes, fontSize, padding);
+    calculateSizeForNodes(allNodes, fontSize, padding, broadChar);
 
     // 深さ2のノードを分類
     const { rightNodes, leftNodes } = classifyDepthTwoNodes(allNodes);
