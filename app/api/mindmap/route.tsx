@@ -11,7 +11,6 @@ function escapeForSVG(text) {
 }
 
 
-// Function to parse code and create a Map of TreeNodes
 function parseCodeToTreeNodes(code: string): Map<string, TreeNode> {
     const allNodes = new Map<string, TreeNode>();
     const lines = code.trim().split('\n');
@@ -21,7 +20,6 @@ function parseCodeToTreeNodes(code: string): Map<string, TreeNode> {
         const depth = line.search(/\S/); // Count the number of leading whitespace characters
         const text = escapeForSVG(line.trim());
 
-        // Calculate the path
         while (pathStack.length > depth) {
             pathStack.pop();
         }
@@ -39,7 +37,6 @@ function parseCodeToTreeNodes(code: string): Map<string, TreeNode> {
         const path = pathStack.join('-');
         const parentPath = pathStack.length > 1 ? pathStack.slice(0, -1).join('-') : null;
 
-        // Create a TreeNode and add it to the Map
         allNodes.set(path, new TreeNode(text, path, allNodes.get(parentPath)));
         // console.log(path + " " + text + " (" + parentPath + ")");
     });
@@ -114,7 +111,6 @@ function classifyDepthTwoNodes(nodes: Map<string, TreeNode>): { rightNodes: Map<
         }
     });
 
-    // Include child nodes (excluding root node)
     nodes.forEach((node) => {
         if (node.path === '0') return; // Skip the root node
 
@@ -141,7 +137,6 @@ function classifyDepthTwoNodes(nodes: Map<string, TreeNode>): { rightNodes: Map<
     return { rightNodes, leftNodes };
 }
 
-// Function to calculate total width and height of child nodes
 function calculateChildDimensions(nodes: Map<string, TreeNode>, gapX: number, gapY: number) {
     // Sort nodes by path length to process from deeper levels
     const sortedNodes = Array.from(nodes.values()).sort((a, b) => b.path.length - a.path.length);
@@ -174,7 +169,6 @@ function calculateChildDimensions(nodes: Map<string, TreeNode>, gapX: number, ga
 }
 
 
-// Function to calculate and set the position of the root node
 function setRootNodePosition(rootNode: TreeNode, svgPadding: number) {
     rootNode.x = rootNode.leftChildWidth + svgPadding / 2;
     rootNode.y = Math.max(rootNode.leftChildHeight, rootNode.rightChildHeight) / 2 + svgPadding / 2;
@@ -182,10 +176,8 @@ function setRootNodePosition(rootNode: TreeNode, svgPadding: number) {
     // console.log("rootNode.y: " + rootNode.y);
 }
 
-// Function to calculate and set the position of the nodes
-function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, gapY: number) {
-    // console.log("\n###### calculatePositionForNodes ######");
 
+function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, gapY: number) {
     // Sort nodes by path value in lexicographical order, resulting in the same order as the input text
     const sortedNodes = Array.from(nodes.values()).sort((a, b) => a.path.localeCompare(b.path));
     sortedNodes.forEach((node) => {
@@ -226,26 +218,11 @@ function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, g
     });
 }
 
-// Function to generate SVG
 function createSvgWithConnectedRects(node: TreeNode, base64image: string = '') {
     let svgRects = '';
     let svgLines = '';
-    let svgImage = '';
 
-    // Generate SVG
-    svgRects += node.generateSvg();
-
-    // Add base64 image under root node if it exists and this is the root node
-    if (base64image && node.path === '0') {
-        const imageWidth = node.width * 0.8;
-        const imageHeight = imageWidth;
-        const imageX = node.x + node.width / 2 - imageWidth / 2;
-        const imageY = node.y + node.height / 2 - imageHeight / 2;
-        svgImage = `
-  <image x="${imageX}" y="${imageY}" width="${imageWidth}" height="${imageHeight}" 
-         href="data:image/png;base64,${base64image}"/>
-`;
-    }
+    svgRects += node.generateSvg(base64image);
 
     if (node.parent) {
         const color = node.borderColor;
@@ -266,7 +243,7 @@ function createSvgWithConnectedRects(node: TreeNode, base64image: string = '') {
 `;
     }
 
-    return `${svgRects}${svgLines}${svgImage}`;
+    return `${svgRects}${svgLines}`;
 }
 
 export async function POST(request: NextRequest) {
@@ -278,14 +255,12 @@ export async function POST(request: NextRequest) {
     const contentType = request.headers.get('content-type') || '';
 
     if (contentType.includes('application/json')) {
-        // Process JSON format request body
         const json = await request.json();
         type = json.type;
         code = json.code;
         broadChar = json.broadChar === true;
         base64image = json.base64image;
     } else if (contentType.includes('application/x-www-form-urlencoded')) {
-        // Process form format request body
         const formData = await request.formData();
         type = formData.get('type') as string;
         code = formData.get('code') as string;
@@ -304,16 +279,13 @@ export async function POST(request: NextRequest) {
 
 
 function generateMindmap(code: string, base64image: string, type: string, broadChar: boolean) {
-    // Parse the code and create a Map of TreeNodes
     let allNodes = parseCodeToTreeNodes(code);
     const rootNode = allNodes.get('0');
 
-    // Calculate the width and height for each node
     const fontSize = 10;
     const padding = 10;
     calculateSizeForNodes(allNodes, fontSize, padding, broadChar);
 
-    // Classify depth 2 nodes
     const { rightNodes, leftNodes } = classifyDepthTwoNodes(allNodes);
     // console.log("Right Nodes:", Array.from(rightNodes.keys()));
     // console.log("Left Nodes:", Array.from(leftNodes.keys()));
@@ -324,19 +296,15 @@ function generateMindmap(code: string, base64image: string, type: string, broadC
     const gapX = 25;
     const gapY = 15;
 
-    // Calculate the total width and height of child nodes
     calculateChildDimensions(leftNodes, gapX, gapY);
     calculateChildDimensions(rightNodes, gapX, gapY);
 
-    // Set the position of the root node
     const svgPadding = 30;
     setRootNodePosition(rootNode, svgPadding);
 
-    // Calculate the position for each node
     calculatePositionForNodes(leftNodes, gapX, gapY);
     calculatePositionForNodes(rightNodes, gapX, gapY);
 
-    // Generate SVG based on TreeNode
     const svgRoot = createSvgWithConnectedRects(rootNode, base64image);
     let svgLeft = "";
     leftNodes.forEach((node) => {
@@ -350,9 +318,10 @@ function generateMindmap(code: string, base64image: string, type: string, broadC
     const totalHeight = Math.max(...Array.from(leftNodes.values()).map(node => node.y + node.height), ...Array.from(rightNodes.values()).map(node => node.y + node.height)) + svgPadding;
     const svg = `
 <svg id="mindmap-svg" viewBox="0 0 ${totalWidth} ${totalHeight}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-${svgLeft}
-${svgRight}
-${svgRoot}
+  <rect width="100%" height="100%" fill="#FFFFE0"/>
+  ${svgLeft}
+  ${svgRight}
+  ${svgRoot}
 </svg>
 `;
 
@@ -380,7 +349,7 @@ ${svgRoot}
     }
 }
 
-/*
+
 export async function GET(request: NextRequest) {
     const type = request.nextUrl.searchParams.get('type');
     const broadChar = request.nextUrl.searchParams.get('broadChar') === 'true';
@@ -388,8 +357,9 @@ export async function GET(request: NextRequest) {
     const fs = require('fs');
     const path = require('path');
     const base64image = fs.readFileSync(path.join(process.cwd(), 'test/base64image.txt'), 'utf8');
-    const code4 = fs.readFileSync(path.join(process.cwd(), 'test/code4.txt'), 'utf8');
+    const code = fs.readFileSync(path.join(process.cwd(), 'test/code5.txt'), 'utf8');
 
-    return generateMindmap(code4, base64image, type, broadChar);
+    return generateMindmap(code, base64image, type, broadChar);
 }
-*/
+
+
