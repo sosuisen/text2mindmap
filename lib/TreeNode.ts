@@ -80,7 +80,7 @@ export class TreeNode {
 
 
         } else {
-            this.bgColor = "#e0e0e0";
+            this.bgColor = "#fff0e0";
             this.textColor = "#000000";
             this.borderColor = "#000000";
             this.borderWidth = 0;
@@ -97,18 +97,33 @@ export class TreeNode {
         }
     }
 
-    generateSvg(): string {
+    generateSvg(base64image: string = ''): string {
         if (this.path === "0") {
             const radius = this.width / 2;
+            const padding = 3;
+            let imageSvg = '';
+            if (base64image) {
+                const imageSize = radius * 2;
+                imageSvg = `
+<defs>
+  <clipPath id="circleClip">
+    <circle cx="${this.x + radius}" cy="${this.y}" r="${radius}" />
+  </clipPath>
+</defs>
+<image x="${this.x}" y="${this.y - radius}" width="${imageSize}" height="${imageSize}" href="data:image/png;base64,${base64image}" clip-path="url(#circleClip)" opacity="1"/>
+`;
+            }
             return `
 <circle cx="${this.x + radius}" cy="${this.y}" r="${radius}" fill="${this.bgColor}" stroke="${this.borderColor}" stroke-width="${this.borderWidth}"/>
+${imageSvg}
+<rect x="${this.x}" y="${this.y - this.fontSize / 2 - padding}" width="${this.width}" height="${this.fontSize + padding * 2}" fill="white" opacity="0.7"/>
 <text x="${this.x + radius}" y="${this.y}" font-size="${this.fontSize}px" text-anchor="middle" alignment-baseline="central" fill="${this.textColor}">${this.text}</text>
 `;
         } else if (this.path.split('-').length >= 4) {
-            const anchor = this.direction === "left" ? "right" : "left";
-            const xOffset = this.direction === "left" ? -10 : 10;
+            const anchor = this.direction === "left" ? "end" : "start";
+            const xOffset = this.direction === "left" ? this.x + this.width - 10 : this.x + 10;
             return `
-<text x="${this.x + xOffset}" y="${this.y + this.height / 2}" font-size="${this.fontSize}px" text-anchor="${anchor}" alignment-baseline="central" fill="${this.textColor}" text-decoration="underline">${this.text}</text>
+<text x="${xOffset}" y="${this.y + this.height / 2}" font-size="${this.fontSize}px" text-anchor="${anchor}" alignment-baseline="central" fill="${this.textColor}" text-decoration="underline">${this.text}</text>
 `;
         } else {
             return `
