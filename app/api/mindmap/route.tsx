@@ -169,7 +169,7 @@ function calculateChildDimensions(nodes: Map<string, TreeNode>, gapX: number, ga
 }
 
 
-function setRootNodePosition(rootNode: TreeNode, svgPadding: number) {
+function calculateRootNodePosition(rootNode: TreeNode, svgPadding: number) {
     rootNode.x = rootNode.leftChildWidth + svgPadding / 2;
     rootNode.y = Math.max(rootNode.leftChildHeight, rootNode.rightChildHeight) / 2 + svgPadding / 2;
     // console.log("rootNode.x: " + rootNode.x);
@@ -177,26 +177,25 @@ function setRootNodePosition(rootNode: TreeNode, svgPadding: number) {
 }
 
 
-function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, gapY: number) {
+function calculateNodePosition(nodes: Map<string, TreeNode>, gapX: number, gapY: number) {
+    const jitterXPercentage = 0.1;
+    const jitterYPercentage = 0.2;
+
     // Sort nodes by path value in lexicographical order, resulting in the same order as the input text
     const sortedNodes = Array.from(nodes.values()).sort((a, b) => a.path.localeCompare(b.path));
     sortedNodes.forEach((node) => {
-        /*
-        if (node.direction === "left") {
-            console.log(node.path + " " + node.text + ", child:" + node.leftChildWidth + "x" + node.leftChildHeight);
-        } else {
-            console.log(node.path + " " + node.text + ", child:" + node.rightChildWidth + "x" + node.rightChildHeight);
-        }
-        */
         const parentNode = node.parent;
 
         // Calculate x coordinate
-        // Determine if the node's branch extends to the left or right based on direction
         const currentX = node.direction === "left"
             ? parentNode.x - node.width - gapX
             : parentNode.x + parentNode.width + gapX;
 
-        node.x = currentX;
+        // Introduce jitter
+        const jitterX = (Math.random() - 0.5) * jitterXPercentage * node.width;
+        const jitterY = (Math.random() - 0.5) * jitterYPercentage * node.height;
+
+        node.x = currentX + jitterX;
 
         // Calculate y coordinate
         let currentY = 0;
@@ -210,10 +209,9 @@ function calculatePositionForNodes(nodes: Map<string, TreeNode>, gapX: number, g
             currentY = parentNode.y - parentHeight / 2 + myHeight / 2;
         } else {
             const siblingPath = pathArr.slice(0, -1).join('-') + '-' + (siblingIndex - 1);
-            // console.log("siblingPath: " + siblingPath);
             currentY = nodes.get(siblingPath).bottom + gapY + myHeight / 2;
         }
-        node.y = currentY;
+        node.y = currentY + jitterY;
         node.bottom = node.y + myHeight / 2;
     });
 }
@@ -300,10 +298,10 @@ function generateMindmap(code: string, base64image: string, type: string, broadC
     calculateChildDimensions(rightNodes, gapX, gapY);
 
     const svgPadding = 30;
-    setRootNodePosition(rootNode, svgPadding);
+    calculateRootNodePosition(rootNode, svgPadding);
 
-    calculatePositionForNodes(leftNodes, gapX, gapY);
-    calculatePositionForNodes(rightNodes, gapX, gapY);
+    calculateNodePosition(leftNodes, gapX, gapY);
+    calculateNodePosition(rightNodes, gapX, gapY);
 
     const svgRoot = createSvgWithConnectedRects(rootNode, base64image);
     let svgLeft = "";
