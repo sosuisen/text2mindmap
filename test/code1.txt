@@ -10,18 +10,18 @@
     Gion Matsuri
     Aoi Matsuri
   Landmarks
-    Temples
-     Kinkaku-ji
-     Kiyomizu-dera
-    Shrines
-     Fushimi Inari-taisha
-     Heian Shrine
+   Temples
+    Kinkaku-ji
+    Kiyomizu-dera
+   Shrines
+    Fushimi Inari-taisha
+    Heian Shrine
   Nature
    Gardens
-     Ryoan-ji
-     Arashiyama Bamboo Grove
+    Ryoan-ji
+    Arashiyama Bamboo Grove
    Parks
-     Kyoto Imperial Park
+    Kyoto Imperial Park
   Cuisine
    Kaiseki
    Yudofu
