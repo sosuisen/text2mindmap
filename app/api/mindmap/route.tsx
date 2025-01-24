@@ -358,6 +358,7 @@ function generateMindmap(code: string, base64image: string, type: string, broadC
     }
 }
 
+/*
 export async function GET(request: NextRequest) {
     const type = request.nextUrl.searchParams.get('type');
     const broadChar = request.nextUrl.searchParams.get('broadChar') === 'true';
@@ -369,3 +370,4 @@ export async function GET(request: NextRequest) {
 
     return generateMindmap(code, base64image, type, broadChar);
 }
+*/
