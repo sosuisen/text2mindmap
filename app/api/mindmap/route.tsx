@@ -366,7 +366,7 @@ export async function GET(request: NextRequest) {
     const fs = require('fs');
     const path = require('path');
     const base64image = fs.readFileSync(path.join(process.cwd(), 'test/base64image.txt'), 'utf8');
-    const code = fs.readFileSync(path.join(process.cwd(), 'test/code6.txt'), 'utf8');
+    const code = fs.readFileSync(path.join(process.cwd(), 'test/code1.txt'), 'utf8');
 
     return generateMindmap(code, base64image, type, broadChar);
 }

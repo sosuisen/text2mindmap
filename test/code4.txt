@@ -1,23 +1,5 @@
- オブジェクト指向プログラミング
-  基本概念の理解
-   Javaの歴史と特徴
-   オブジェクト指向プログラミング
-    クラスとオブジェクト
-    継承とポリモーフィズム
-    カプセル化と抽象化
-   データ型と変数
-    プリミティブ型
-    参照型
-  開発環境の設定
-   JDKのインストール
-   IDEの選択と設定
-    Eclipse
-    IntelliJ IDEA
-    NetBeans
-  デバッグ
-   デバッグの基本
-   デバッグツールの利用
-   デバッグの実践
-  テスト
-   テストの基本
-   テストツールの利用について考える
+ Python Programming
+  Sytax and Semantics
+  Libraries and Frameworks
+  Development Tools
+  Applications

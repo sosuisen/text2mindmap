@@ -1,5 +1,0 @@
- Python Programming
-  Sytax and Semantics
-  Libraries and Frameworks
-  Development Tools
-  Applications
