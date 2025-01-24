@@ -179,6 +179,9 @@ function calculateRootNodePosition(rootNode: TreeNode, svgPadding: number) {
     rootNode.x = rootNode.leftChildWidth + svgPadding / 2;
     rootNode.y = Math.max(rootNode.leftChildHeight, rootNode.rightChildHeight) / 2 + svgPadding / 2;
 
+    if (rootNode.y < rootNode.height / 2 + svgPadding / 2) {
+        rootNode.y = rootNode.height / 2 + svgPadding / 2;
+    }
     if (rootNode.leftChildWidth === 0 && rootNode.rightChildWidth === 0) {
         rootNode.x = svgPadding / 2;
         rootNode.y = rootNode.height / 2 + svgPadding / 2;
@@ -355,7 +358,6 @@ function generateMindmap(code: string, base64image: string, type: string, broadC
     }
 }
 
-/*
 export async function GET(request: NextRequest) {
     const type = request.nextUrl.searchParams.get('type');
     const broadChar = request.nextUrl.searchParams.get('broadChar') === 'true';
@@ -363,8 +365,7 @@ export async function GET(request: NextRequest) {
     const fs = require('fs');
     const path = require('path');
     const base64image = fs.readFileSync(path.join(process.cwd(), 'test/base64image.txt'), 'utf8');
-    const code = fs.readFileSync(path.join(process.cwd(), 'test/code5.txt'), 'utf8');
+    const code = fs.readFileSync(path.join(process.cwd(), 'test/code6.txt'), 'utf8');
 
     return generateMindmap(code, base64image, type, broadChar);
 }
-*/
