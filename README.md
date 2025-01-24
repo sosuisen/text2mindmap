@@ -6,6 +6,8 @@ A serverless function that generates SVG mindmaps from indented text data.
 
 This API converts hierarchical text data into visual mindmap diagrams in SVG format. The root node is placed in the center, with child nodes branching out to the left and right sides.
 
+Since it does not rely on external SVG rendering libraries, it can be easily used as a serverless function.
+
 ## API Endpoint
 
 ### POST /api/mindmap
