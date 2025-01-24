@@ -58,14 +58,24 @@ function calculateStringLength(str: string): number {
     return length;
 }
 
+function calculateRootNodeSize(rootNode: TreeNode, fontSize: number, padding: number, broadChar: boolean) {
+    rootNode.fontSize = fontSize * 1.5;
+
+    let size: number;
+    if (broadChar) {
+        const textLength = calculateStringLength(rootNode.text);
+        size = textLength * rootNode.fontSize * 0.6 + padding * 2;
+    } else {
+        size = rootNode.text.length * rootNode.fontSize * 0.6 + padding * 2;
+    }
+    size = size > 70 ? size : 70;
+    rootNode.height = rootNode.width = size;
+}
 
 // Function to calculate rectangle size based on character count
-function calculateSizeForNodes(nodes: Map<string, TreeNode>, fontSize: number, padding: number, broadChar: boolean) {
+function calculateNodeSize(nodes: Map<string, TreeNode>, fontSize: number, padding: number, broadChar: boolean) {
     nodes.forEach((node) => {
         node.fontSize = fontSize;
-        if (node.path === "0") {
-            node.fontSize = fontSize * 1.5;
-        }
         if (broadChar) {
             // When called from Agent.ai, calculate based on text length instead of character count 
             const textLength = calculateStringLength(node.text);
@@ -74,10 +84,6 @@ function calculateSizeForNodes(nodes: Map<string, TreeNode>, fontSize: number, p
         } else {
             node.width = node.text.length * node.fontSize + padding * 2;
             node.height = node.fontSize + padding * 2;
-        }
-        if (node.path === "0") {
-            node.width *= 0.6;
-            node.height = node.width;
         }
     });
 }
@@ -137,7 +143,7 @@ function classifyDepthTwoNodes(nodes: Map<string, TreeNode>): { rightNodes: Map<
     return { rightNodes, leftNodes };
 }
 
-function calculateChildDimensions(nodes: Map<string, TreeNode>, gapX: number, gapY: number) {
+function calculateChildRegion(nodes: Map<string, TreeNode>, gapX: number, gapY: number) {
     // Sort nodes by path length to process from deeper levels
     const sortedNodes = Array.from(nodes.values()).sort((a, b) => b.path.length - a.path.length);
 
@@ -178,7 +184,7 @@ function calculateRootNodePosition(rootNode: TreeNode, svgPadding: number) {
 
 
 function calculateNodePosition(nodes: Map<string, TreeNode>, gapX: number, gapY: number) {
-    const jitterXPercentage = 0.1;
+    const jitterXPercentage = 0.07;
     const jitterYPercentage = 0.2;
 
     // Sort nodes by path value in lexicographical order, resulting in the same order as the input text
@@ -274,28 +280,25 @@ export async function POST(request: NextRequest) {
     return generateMindmap(code, base64image, type, broadChar);
 }
 
-
-
 function generateMindmap(code: string, base64image: string, type: string, broadChar: boolean) {
     let allNodes = parseCodeToTreeNodes(code);
     const rootNode = allNodes.get('0');
-
-    const fontSize = 10;
-    const padding = 10;
-    calculateSizeForNodes(allNodes, fontSize, padding, broadChar);
-
     const { rightNodes, leftNodes } = classifyDepthTwoNodes(allNodes);
-    // console.log("Right Nodes:", Array.from(rightNodes.keys()));
-    // console.log("Left Nodes:", Array.from(leftNodes.keys()));
-
     // Discard allNodes here because the path has been rewritten
     allNodes = null;
 
+    // Parameters for nodes
+    const fontSize = 10;
+    const padding = 10;
     const gapX = 25;
     const gapY = 15;
 
-    calculateChildDimensions(leftNodes, gapX, gapY);
-    calculateChildDimensions(rightNodes, gapX, gapY);
+    calculateRootNodeSize(rootNode, fontSize, padding, broadChar);
+    calculateNodeSize(leftNodes, fontSize, padding, broadChar);
+    calculateNodeSize(rightNodes, fontSize, padding, broadChar);
+
+    calculateChildRegion(leftNodes, gapX, gapY);
+    calculateChildRegion(rightNodes, gapX, gapY);
 
     const svgPadding = 30;
     calculateRootNodePosition(rootNode, svgPadding);
