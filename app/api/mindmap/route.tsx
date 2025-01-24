@@ -178,8 +178,11 @@ function calculateChildRegion(nodes: Map<string, TreeNode>, gapX: number, gapY: 
 function calculateRootNodePosition(rootNode: TreeNode, svgPadding: number) {
     rootNode.x = rootNode.leftChildWidth + svgPadding / 2;
     rootNode.y = Math.max(rootNode.leftChildHeight, rootNode.rightChildHeight) / 2 + svgPadding / 2;
-    // console.log("rootNode.x: " + rootNode.x);
-    // console.log("rootNode.y: " + rootNode.y);
+
+    if (rootNode.leftChildWidth === 0 && rootNode.rightChildWidth === 0) {
+        rootNode.x = svgPadding / 2;
+        rootNode.y = rootNode.height / 2 + svgPadding / 2;
+    }
 }
 
 
@@ -315,8 +318,10 @@ function generateMindmap(code: string, base64image: string, type: string, broadC
     rightNodes.forEach((node) => {
         svgRight += createSvgWithConnectedRects(node);
     });
-    const totalWidth = Math.max(...Array.from(rightNodes.values()).map(node => node.x + node.width)) + svgPadding;
-    const totalHeight = Math.max(...Array.from(leftNodes.values()).map(node => node.y + node.height), ...Array.from(rightNodes.values()).map(node => node.y + node.height)) + svgPadding;
+    let totalWidth = Math.max(...Array.from(rightNodes.values()).map(node => node.x + node.width)) + svgPadding;
+    let totalHeight = Math.max(...Array.from(leftNodes.values()).map(node => node.y + node.height), ...Array.from(rightNodes.values()).map(node => node.y + node.height)) + svgPadding;
+    totalWidth = totalWidth < rootNode.width + svgPadding ? rootNode.width + svgPadding : totalWidth;
+    totalHeight = totalHeight < rootNode.height + svgPadding ? rootNode.height + svgPadding : totalHeight;
     const svg = `
 <svg id="mindmap-svg" viewBox="0 0 ${totalWidth} ${totalHeight}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
   <rect width="100%" height="100%" fill="#FFFFE0"/>
@@ -363,4 +368,3 @@ export async function GET(request: NextRequest) {
     return generateMindmap(code, base64image, type, broadChar);
 }
 */
-

@@ -104,14 +104,7 @@ export class TreeNode {
             let imageSvg = '';
             if (base64image) {
                 const imageSize = radius * 2;
-                imageSvg = `
-<defs>
-  <clipPath id="circleClip">
-    <circle cx="${this.x + radius}" cy="${this.y}" r="${radius}" />
-  </clipPath>
-</defs>
-<image x="${this.x}" y="${this.y - radius}" width="${imageSize}" height="${imageSize}" href="data:image/png;base64,${base64image}" clip-path="url(#circleClip)" opacity="1"/>
-`;
+                imageSvg = `<image x="${this.x}" y="${this.y - radius}" width="${imageSize}" height="${imageSize}" href="data:image/png;base64,${base64image}" style="clip-path: circle(${radius}px at ${radius}px ${radius}px);" opacity="1"/>`;
             }
             return `
 <circle cx="${this.x + radius}" cy="${this.y}" r="${radius}" fill="${this.bgColor}" stroke="${this.borderColor}" stroke-width="${this.borderWidth}"/>
